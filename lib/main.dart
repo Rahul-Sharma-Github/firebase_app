@@ -105,10 +105,19 @@ class _MyHomePageState extends State<MyHomePage> {
                           FirebaseAuth.instance.currentUser?.reload();
                         }
                       },
-                      child: const Text('Submit'),
+                      child: const Text('Create & Login'),
                     ),
                     const SizedBox(
-                      height: 100,
+                      height: 10,
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        signin();
+                      },
+                      child: const Text('Sign In'),
+                    ),
+                    const SizedBox(
+                      height: 20,
                     ),
                     ElevatedButton(
                       onPressed: () {
@@ -141,27 +150,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                     ElevatedButton(
                       onPressed: () {
-                        FirebaseAuth.instance.authStateChanges().listen(
-                          (User? user) {
-                            if (user == null) {
-                              print('User is currently signed out!');
-                            } else {
-                              print('User is signed in!');
-                            }
-                          },
-                        );
-
                         FirebaseAuth.instance.userChanges().listen(
-                          (User? user) {
-                            if (user == null) {
-                              print('User is currently signed out!');
-                            } else {
-                              print('User is signed in!');
-                            }
-                          },
-                        );
-
-                        FirebaseAuth.instance.idTokenChanges().listen(
                           (User? user) {
                             if (user == null) {
                               print('User is currently signed out!');
@@ -184,9 +173,11 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
 // Create a New User Account
+// creating a new account Automatically Signed in the User
 
   Future createAccount() async {
     try {
+      await FirebaseAuth.instance.setLanguageCode('en');
       await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: userEmail.text.trim(),
         password: userPassword.text.trim(),
@@ -203,11 +194,29 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+// Sign in with Credential
+
+  Future signin() async {
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: userEmail.text.trim(),
+        password: userPassword.text.trim(),
+      );
+      print('Signed In !');
+    } catch (e) {
+      print('Signed in Error = $e');
+    }
+  }
+
 // Sign out
   Future signOut() async {
     try {
-      await FirebaseAuth.instance.signOut();
-      print('User Signed Out !');
+      if (FirebaseAuth.instance.currentUser != null) {
+        await FirebaseAuth.instance.signOut();
+        print('User Signed Out !');
+      } else {
+        print('User already signed out !');
+      }
     } catch (e) {
       print('Other Error = $e');
     }
@@ -219,8 +228,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future deleteAccount() async {
     try {
-      await FirebaseAuth.instance.currentUser?.delete();
-      print('User Account Deleted !');
+      if (FirebaseAuth.instance.currentUser != null) {
+        FirebaseAuth.instance.currentUser?.delete();
+        print('User Account Deleted !');
+      } else {
+        print('Please sign in with your account First !');
+      }
     } catch (e) {
       print('Other Error = $e');
     }

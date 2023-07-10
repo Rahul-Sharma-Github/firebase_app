@@ -6,6 +6,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app/firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -93,6 +95,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     const SizedBox(
                       height: 40,
                     ),
+
+                    // To create a Unique New Account
                     ElevatedButton(
                       onPressed: () {
                         print('Email Id = ${userEmail.text.trim()}');
@@ -150,15 +154,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                     ElevatedButton(
                       onPressed: () {
-                        FirebaseAuth.instance.userChanges().listen(
-                          (User? user) {
-                            if (user == null) {
-                              print('User is currently signed out!');
-                            } else {
-                              print('User is signed in!');
-                            }
-                          },
-                        );
+                        check();
                       },
                       child: const Text('Check'),
                     ),
@@ -178,11 +174,27 @@ class _MyHomePageState extends State<MyHomePage> {
   Future createAccount() async {
     try {
       await FirebaseAuth.instance.setLanguageCode('en');
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      UserCredential userCredential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: userEmail.text.trim(),
         password: userPassword.text.trim(),
       );
+
+      var uid = userCredential.user?.uid;
+      print(userCredential);
       print('Account Created');
+
+      // Accessing firestore database
+      // and storing data in it
+      try {
+        await FirebaseFirestore.instance.collection('users').doc(uid).set(
+          {
+            'email': userEmail.text.trim(),
+          },
+        );
+      } catch (e) {
+        print('Firestore database error = $e');
+      }
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
         print('The password provided is too weak.');
@@ -241,4 +253,15 @@ class _MyHomePageState extends State<MyHomePage> {
 
   //
   //
+  Future check() async {
+    FirebaseAuth.instance.userChanges().listen(
+      (User? user) {
+        if (user == null) {
+          print('User is currently signed out!');
+        } else {
+          print('User is signed in!');
+        }
+      },
+    );
+  }
 }
